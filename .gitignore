@@ -1,0 +1,12 @@
+/.env
+/.env.*
+!/.env.example
+/node_modules
+/vendor
+/.vite
+/public/build
+/public/hot
+/storage/*.key
+
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
