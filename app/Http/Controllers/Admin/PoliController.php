@@ -32,8 +32,13 @@ class PoliController extends Controller
             'tarif.integer'      => 'Tarif harus berupa angka.',
         ]);
 
-        $totalPoli = Poli::count();
-        $kodePoli = chr(65 + $totalPoli);
+        $kodePoli = Poli::query()
+            ->whereNotNull('kode_poli')
+            ->pluck('kode_poli')
+            ->filter(fn ($kode) => preg_match('/^[A-Z]+$/', $kode))
+            ->max() ?? 'A';
+
+        $kodePoli++;
 
         $validated['kode_poli'] = $kodePoli;
 
