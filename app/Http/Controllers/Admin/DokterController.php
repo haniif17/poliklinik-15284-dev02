@@ -66,15 +66,6 @@ class DokterController extends Controller
             ->with('success', 'Data dokter berhasil ditambahkan.');
     }
 
-    public function show(string $id)
-    {
-        $dokter = User::with('poli')
-            ->where('role', 'dokter')
-            ->findOrFail($id);
-
-        return view('admin.dokter.show', compact('dokter'));
-    }
-
     public function edit(string $id)
     {
         $dokter = User::where('role', 'dokter')->findOrFail($id);
@@ -130,6 +121,11 @@ class DokterController extends Controller
     public function destroy(string $id)
     {
         $dokter = User::where('role', 'dokter')->findOrFail($id);
+
+        if ($dokter->jadwalPeriksas()->exists()) {
+            return back()->with('error', 'Dokter tidak dapat dihapus karena sudah memiliki jadwal atau riwayat pelayanan.');
+        }
+
         $dokter->delete();
 
         return redirect()

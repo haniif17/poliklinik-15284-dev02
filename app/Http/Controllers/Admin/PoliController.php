@@ -32,13 +32,7 @@ class PoliController extends Controller
             'tarif.integer'      => 'Tarif harus berupa angka.',
         ]);
 
-        $kodePoli = Poli::query()
-            ->whereNotNull('kode_poli')
-            ->pluck('kode_poli')
-            ->filter(fn ($kode) => preg_match('/^[A-Z]+$/', $kode))
-            ->max() ?? 'A';
-
-        $kodePoli++;
+        $kodePoli = $this->nextKodePoli();
 
         $validated['kode_poli'] = $kodePoli;
 
@@ -47,13 +41,6 @@ class PoliController extends Controller
         return redirect()
             ->route('admin.polis.index')
             ->with('success', 'Poli berhasil ditambahkan.');
-    }
-
-    public function show(string $id)
-    {
-        $poli = Poli::findOrFail($id);
-
-        return view('admin.polis.show', compact('poli'));
     }
 
     public function edit(string $id)
@@ -86,10 +73,40 @@ class PoliController extends Controller
     public function destroy(string $id)
     {
         $poli = Poli::findOrFail($id);
+
+        if ($poli->dokters()->exists()) {
+            return back()->with('error', 'Poli tidak dapat dihapus karena masih memiliki dokter.');
+        }
+
         $poli->delete();
 
         return redirect()
             ->route('admin.polis.index')
             ->with('success', 'Poli berhasil dihapus.');
+    }
+
+    private function nextKodePoli(): string
+    {
+        $usedCodes = Poli::query()
+            ->whereNotNull('kode_poli')
+            ->pluck('kode_poli')
+            ->map(fn ($code) => strtoupper(trim($code)))
+            ->filter(fn ($code) => preg_match('/^[A-Z]+$/', $code))
+            ->flip();
+
+        for ($number = 1; ; $number++) {
+            $code = '';
+            $value = $number;
+
+            while ($value > 0) {
+                $value--;
+                $code = chr(65 + ($value % 26)) . $code;
+                $value = intdiv($value, 26);
+            }
+
+            if (!isset($usedCodes[$code])) {
+                return $code;
+            }
+        }
     }
 }

@@ -43,13 +43,6 @@ class ObatController extends Controller
             ->with('success', 'Data obat berhasil ditambahkan.');
     }
 
-    public function show(string $id)
-    {
-        $obat = Obat::findOrFail($id);
-
-        return view('admin.obat.show', compact('obat'));
-    }
-
     public function edit(string $id)
     {
         $obat = Obat::findOrFail($id);
@@ -85,6 +78,11 @@ class ObatController extends Controller
     public function destroy(string $id)
     {
         $obat = Obat::findOrFail($id);
+
+        if ($obat->detailPeriksas()->exists()) {
+            return back()->with('error', 'Obat tidak dapat dihapus karena sudah digunakan dalam riwayat pemeriksaan.');
+        }
+
         $obat->delete();
 
         return redirect()

@@ -76,10 +76,10 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/pasien/export', [ExportController::class, 'pasien'])->name('pasien.export');
         Route::get('/obat/export', [ExportController::class, 'obat'])->name('obat.export');
 
-        Route::resource('polis', PoliController::class);
-        Route::resource('dokter', AdminDokterController::class);
+        Route::resource('polis', PoliController::class)->except(['show']);
+        Route::resource('dokter', AdminDokterController::class)->except(['show']);
         Route::resource('pasien', AdminPasienController::class)->except(['show']);
-        Route::resource('obat', ObatController::class);
+        Route::resource('obat', ObatController::class)->except(['show']);
 
         Route::get('/pembayaran', [AdminPembayaranController::class, 'index'])->name('pembayaran.index');
         Route::post('/pembayaran/{id}/konfirmasi', [AdminPembayaranController::class, 'konfirmasi'])->name('pembayaran.konfirmasi');

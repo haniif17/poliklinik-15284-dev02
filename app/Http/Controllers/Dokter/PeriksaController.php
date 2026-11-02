@@ -60,14 +60,10 @@ class PeriksaController extends Controller
 
         $jadwal = $daftar->jadwalPeriksa;
 
-        $jadwal->update([
-            'current_antrian' => $daftar->no_antrian
-        ]);
-
-        broadcast(new AntrianUpdated(
-            $jadwal->id,
-            $daftar->no_antrian
-        ));
+        Carbon::setLocale('id');
+        if ($jadwal->hari !== Carbon::now('Asia/Jakarta')->translatedFormat('l')) {
+            abort(403, 'Pasien ini belum berada pada jadwal pemeriksaan hari ini.');
+        }
 
         $obats = Obat::orderBy('nama_obat')->get();
 
@@ -80,7 +76,7 @@ class PeriksaController extends Controller
             'id_daftar_poli' => 'required|exists:daftar_poli,id',
             'catatan'        => 'nullable|string',
             'obat'           => 'required|array|min:1',
-            'obat.*'         => 'exists:obat,id',
+            'obat.*'         => ['exists:obat,id', 'distinct'],
         ]);
 
         $daftar = DaftarPoli::with([
@@ -91,6 +87,11 @@ class PeriksaController extends Controller
 
         if ($daftar->jadwalPeriksa->id_dokter != Auth::id()) {
             abort(403, 'Anda tidak berhak memeriksa pasien ini.');
+        }
+
+        Carbon::setLocale('id');
+        if ($daftar->jadwalPeriksa->hari !== Carbon::now('Asia/Jakarta')->translatedFormat('l')) {
+            abort(403, 'Pasien ini belum berada pada jadwal pemeriksaan hari ini.');
         }
 
         if ($daftar->periksa) {
@@ -130,7 +131,20 @@ class PeriksaController extends Controller
 
                     $obat->decrement('stok', 1);
                 }
+
+                $daftar->jadwalPeriksa->update([
+                    'current_antrian' => $daftar->no_antrian,
+                ]);
             });
+
+            try {
+                broadcast(new AntrianUpdated(
+                    $daftar->jadwalPeriksa->id,
+                    $daftar->no_antrian
+                ));
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
 
             return redirect()
                 ->route('dokter.periksa-pasien.index')
